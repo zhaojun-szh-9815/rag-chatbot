@@ -23,12 +23,14 @@ function App() {
   };
   const messagesEndRef = useRef(null)
 
+  const baseURL = "http://127.0.0.1:5000"
+
   // init huggingface, pinecone setting
   useEffect(()=>{
     console.log(JSON.stringify(process.env.NODE_ENV))
     const init_setting = async() => {
       setIsLoading(true)
-      const response = await axios.get("/setup", {headers})
+      const response = await axios.get(baseURL + "/setup", {headers})
       if (response.data === "success") {
         setChatLog([...chatLog, {user: "ai", message: "Prepared! Let's start! Nice to meet you!"}])
         setIsLoading(false)
@@ -44,7 +46,7 @@ function App() {
   useEffect(()=>{
     const call_api = async() => {
       // fetch response to the api
-      const response = await axios.post("/chat", {
+      const response = await axios.post(baseURL + "/chat", {
         message: message
       }, {headers});
 

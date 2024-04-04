@@ -10,6 +10,7 @@ from langchain.schema import (
     AIMessage
 )
 import pinecone
+import spacy
 from dotenv import load_dotenv
 import os
 import time
@@ -91,8 +92,17 @@ def load_file(filename: str, model: dict) -> Pinecone:
     return Pinecone.from_documents(documents, model["embedding"], index_name=index_name)
 
 def augment_prompt(query: str, chat_history: list, pinecone_connection: Pinecone):
-    results = pinecone_connection.similarity_search(query, k=3)
-    print(results)
+
+    # extract keywords from question, en-core-web-trf is focused on accuracy
+    nlp = spacy.load("en_core_web_trf")
+    doc = nlp(query)
+    # Extract keywords based on POS tags (e.g., NOUN, PROPN for proper nouns, VERB)
+    keywords = [token.text for token in doc if token.pos_ in ('NOUN', 'PROPN', 'VERB')]
+
+    # print(keywords)
+
+    results = pinecone_connection.similarity_search(' '.join(keywords), k=2)
+    # print(results)
     source_knowledge = "\n".join([x.page_content for x in results])
     history = "\n".join([x.content for x in chat_history])
     augmented_prompt = f"""Based on the contexts below and the chat history, conclude the contexts and answer the question in your own words. You can answer you don't know if you cannot find related information from contexts.
@@ -110,7 +120,8 @@ def chat_llm(question: str, messages: list, chat: HuggingFaceHub, pinecone_conne
     if len(messages) > 4:
         messages = messages[0] + messages[-4:]
         messages = messages.messages
-    prompt = augment_prompt(query=question, chat_history=messages, pinecone_connection=pinecone_connection)
+    
+    prompt = augment_prompt(query= question, chat_history=messages, pinecone_connection=pinecone_connection)
     messages.append(HumanMessage(content=question))
 
     # print(prompt)
@@ -156,7 +167,7 @@ def admin_vectordb_management():
         if question == "exit":
             break
         response = chat_llm(question=question, messages=messages, chat=model["chat"], pinecone_connection=docsearch)
-        print(response)
+        # print(response)
 
 
 if __name__ == "__main__":

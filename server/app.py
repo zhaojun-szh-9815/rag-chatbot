@@ -34,7 +34,7 @@ def chat():
         question = request.form.get('message')
         try:
             answer = chatService.chat_llm(question=question, messages=messages, chat=model["chat"], pinecone_connection=docsearch)
-            print({question: answer})
+            # print({question: answer})
             return answer
         except Exception:
             print(messages)
